@@ -6,8 +6,6 @@ local render_UpdateScreenEffectTexture = render.UpdateScreenEffectTexture
 local render_SetScissorRect = render.SetScissorRect
 local ScrW = ScrW
 local ScrH = ScrH
-local SysTime = SysTime
-local FrameTime = FrameTime
 local Vector = Vector
 local Matrix = Matrix
 
@@ -76,12 +74,12 @@ function draw.TextRotated(text, x, y, color, font, ang)
 	--render.PushFilterMin(TEXFILTER.ANISOTROPIC)
 	surface.SetFont(font)
 	surface.SetTextColor(color)
-	local textWidth, textHeight = surface.GetTextSize( text )
-	local rad = -math.rad( ang )
-	local halvedPi = math.pi / 2
+	surface.GetTextSize(text)
+
 	local m = Matrix()
 	m:SetAngles(Angle(0, ang, 0))
 	m:SetTranslation(Vector(x, y, 0))
+
 	cam.PushModelMatrix(m)
 		surface.SetTextPos(0, 0)
 		surface.DrawText(text)
