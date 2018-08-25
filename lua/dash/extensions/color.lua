@@ -27,6 +27,7 @@ end
 function COLOR:SetHex(hex)
 	local r, g, b = string_match(hex, '#(..)(..)(..)')
 	self.r, self.g, self.b = tonumber(r, 16), tonumber(g, 16), tonumber(b, 16)
+	return self
 end
 
 function COLOR:ToHex()
@@ -34,7 +35,7 @@ function COLOR:ToHex()
 end
 
 function COLOR:SetEncodedRGB(num)
-	self.r, self.b, self.g = bit_band(bit_rshift(num, 16), 0xFF), bit_band(bit_rshift(num, 8), 0xFF), bit_band(num, 0xFF)
+	self.r, self.g, self.b = bit_band(bit_rshift(num, 16), 0xFF), bit_band(bit_rshift(num, 8), 0xFF), bit_band(num, 0xFF)
 end
 
 function COLOR:ToEncodedRGB()
@@ -42,7 +43,7 @@ function COLOR:ToEncodedRGB()
 end
 
 function COLOR:SetEncodedRGBA(num)
-	self.r, self.b, self.g, self.a = bit_band(rshift(num, 16), 0xFF), bit_band(rshift(num, 8), 0xFF), bit_band(num, 0xFF), bit_band(rshift(num, 24), 0xFF)
+	self.r, self.g, self.b, self.a = bit_band(rshift(num, 16), 0xFF), bit_band(rshift(num, 8), 0xFF), bit_band(num, 0xFF), bit_band(rshift(num, 24), 0xFF)
 end
 
 function COLOR:ToEncodedRGBA()
@@ -50,5 +51,6 @@ function COLOR:ToEncodedRGBA()
 end
 
 function COLOR:Lerp(fraction, from, to)
-	self.r, self.g, self.b = Lerp(fraction, from.r, to.r), Lerp(fraction, from.g, to.g), Lerp(fraction, from.b, to.b), Lerp(fraction, from.a, to.a)
+	self.r, self.g, self.b = Lerp(fraction, from.r, to.r), Lerp(fraction, from.g, to.g), Lerp(fraction, from.b, to.b)
+	return self
 end
