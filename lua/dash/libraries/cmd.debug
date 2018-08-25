@@ -1,0 +1,19 @@
+--[[-----------------------------------
+	Отладка cmd.RAW параметра
+-------------------------------------]]
+cmd("dev", function(pl,targs)
+	-- cprint(pl,targs)
+	prt({targs = targs})
+end):AddParam(cmd.RAW,cmd.OPT_OPTIONAL)
+
+AMD():RunCommand("dev",1,2,3,4,5,6)
+
+
+-- hook.Add("cmd.CanRunCommand","asdf",function(pl, CMD, args)
+-- 	print("pl,CMD,args", pl, CMD, args)
+-- end)
+
+-- hook.Add("cmd.OnCommandError","asdf",function(pl,CMD,errID,hz)
+-- 	print("pl,CMD,errID,hz", pl,CMD,errID,hz)
+-- end)
+

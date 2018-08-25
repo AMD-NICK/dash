@@ -97,6 +97,8 @@ function cmd.Parse(caller, cmdobj, argstring)
 			parsed_args[#parsed_args + 1] = value
 		end
 	end
+
+
 	return true, parsed_args
 end
 
@@ -169,6 +171,10 @@ cmd.AddParam('STRING', 'String', function(caller, cmdobj, arg, args, step)
 		results = results .. ((i == 1) and '' or ' ') .. args[i]
 		c = c + 1
 	end
+
+	-- Если второй параметр опциональный, то выше в цикле будет for i = 1,0 do и строка не обработается
+	results = results == '' and arg or results
+
 	return true, results, c
 end, function(cmdobj, arg, args, step)
 	local results = ''
@@ -255,7 +261,7 @@ end, function(cmdobj, arg, args, step)
 end)
 
 cmd.AddParam('RAW', 'Raw', function(called, cmdobj, arg, args, step)
-	return true, args, #args
+	return true, args, 0
 end)
 
 
@@ -290,9 +296,9 @@ if (SERVER) then
 		if cmd.Exists(command) then
 			local cmdobj = cmd.Get(command)
 			local name = cmdobj:GetName()
-			
+
 			for i = 1, #args do
-				if (string.upper(tostring(args[i])) == 'STEAM_0') and (args[i + 4]) then
+				if (string.upper(tostring(args[i])) == 'STEAM_0') and args[i + 4] then
 					args[i] = table.concat(args, '', i, i + 4)
 					for _ = 1, 4 do
 						table.remove(args, i + 1)
@@ -301,7 +307,7 @@ if (SERVER) then
 				end
 			end
 
-			if (hook.Call('cmd.CanRunCommand', nil, pl, cmdobj, args) == false) or (cmdobj:CanRun(pl) == false) then return end
+			if (cmdobj:CanRun(pl) == false) or (hook.Call('cmd.CanRunCommand', nil, pl, cmdobj, args) == false) then return end
 
 			if pl:IsPlayer() then
 				if (not pl.CmdLastRun) then pl.CmdLastRun = {} end
@@ -337,7 +343,11 @@ end
 
 local PLAYER = FindMetaTable 'Player'
 function PLAYER:RunCommand(command, ...)
-	cmd.Run(self, command, {...})
+	if CLIENT then
+		cmd.Run(      command,  ... )
+	else
+		cmd.Run(self, command, {...})
+	end
 end
 
 
@@ -498,13 +508,20 @@ else
 	end)
 
 	hook.Add('PlayerSay', 'cmd.PlayerSay', function(pl, text)
-		local text = text:Trim()
-		if (text[1] == '!') or (text[1] == '/') then
+		text = text:Trim()
+		if text[1] == '/' then
 			local args = string.ExplodeQuotes(text)
-			local command = args[1]:sub(2)
-			table.remove(args, 1)
-			cmd.Run(pl, command, args)
-			return ''
+			local command = args[1]:sub(2):lower()
+
+			local args_ = {}
+			for i = 2,#args do
+				args_[#args_ + 1] = args[i]
+			end
+
+			if cmd.GetTable[command] then
+				cmd.Run(pl, command, args_)
+				return ''
+			end
 		end
 	end)
 end
