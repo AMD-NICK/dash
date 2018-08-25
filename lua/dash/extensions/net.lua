@@ -4,23 +4,37 @@ setmetatable(net, {
 	end
 })
 
-local IsValid 	= IsValid
-local Entity 	= Entity
-local Color 	= Color
+
+local IsValid = IsValid
+local Entity = Entity
+
 local WriteUInt = net.WriteUInt
-local ReadUInt 	= net.ReadUInt
-local Start 	= net.Start
-local Send 		= (SERVER) and net.Send or net.SendToServer
-local hook_Call = hook.Call
+local ReadUInt  = net.ReadUInt
 
 local Incoming = net.Incoming
-function net.Incoming(len, pl)
-	hook_Call('IncomingNetMessage', nil, len, pl)
-	return Incoming(len, pl)
+local hook_Call = hook.Call
+function net.Incoming(bitCount, pl)
+	hook_Call('IncomingNetMessage', nil, bitCount, pl)
+	return Incoming(bitCount, pl)
+end
+
+function net.ReadUInt(bitCount)
+	if (bitCount > 32) or (bitCount < 1) then
+		error('Out of range bitCount! Got ' .. bitCount)
+	end
+	return ReadUInt(bitCount)
+end
+
+local ReadInt = net.ReadInt
+function net.ReadInt(bitCount)
+	if (bitCount > 32) or (bitCount < 1) then
+		error('Out of range bitCount! Got ' .. bitCount)
+	end
+	return ReadInt(bitCount)
 end
 
 function net.WriteEntity(ent)
-	if IsValid(ent) then 
+	if IsValid(ent) then
 		WriteUInt(ent:EntIndex(), 12)
 	else
 		WriteUInt(0, 12)
@@ -33,15 +47,36 @@ function net.ReadEntity()
 	return Entity(i)
 end
 
-function net.WriteColor(c)
-	WriteUInt(c.r, 8)
-	WriteUInt(c.g, 8)
-	WriteUInt(c.b, 8)
-	WriteUInt(c.a, 8)
+function net.WriteRGB(r, g, b)
+	WriteUInt(r, 8)
+	WriteUInt(g, 8)
+	WriteUInt(b, 8)
 end
 
+function net.WriteRGBA(r, g, b, a)
+	WriteUInt(r, 8)
+	WriteUInt(g, 8)
+	WriteUInt(b, 8)
+	WriteUInt(a, 8)
+end
+local WriteRGBA = net.WriteRGBA
+
+function net.WriteColor(c)
+	WriteRGBA(c.r, c.g, c.b, c.a)
+end
+
+function net.ReadRGB()
+	return ReadUInt(8), ReadUInt(8), ReadUInt(8)
+end
+
+function net.ReadRGBA()
+	return ReadUInt(8), ReadUInt(8), ReadUInt(8), ReadUInt(8)
+end
+local ReadRGBA = net.ReadRGBA
+
+local Color = Color
 function net.ReadColor()
-	return Color(ReadUInt(8), ReadUInt(8), ReadUInt(8), ReadUInt(8))
+	return Color(ReadRGBA())
 end
 
 function net.WriteNibble(i)
@@ -77,19 +112,21 @@ function net.ReadLong()
 end
 
 function net.WritePlayer(pl)
-	if IsValid(pl) then 
-		WriteUInt(pl:EntIndex(), 7)
+	if IsValid(pl) then
+		WriteUInt(pl:EntIndex(), 8)
 	else
-		WriteUInt(0, 7)
+		WriteUInt(0, 8)
 	end
 end
 
 function net.ReadPlayer()
-	local i = ReadUInt(7)
+	local i = ReadUInt(8)
 	if (not i) then return end
 	return Entity(i)
 end
 
+local Start = net.Start
+local Send  = SERVER and net.Send or net.SendToServer
 function net.Ping(msg, recipients)
 	Start(msg)
 	Send(recipients)

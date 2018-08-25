@@ -6,6 +6,10 @@ function string.Random(chars)
 	return str
 end
 
+function string:StartsWith(str)
+	return self:sub(1, str:len()) == str
+end
+
 function string:Apostrophe()
 	local len = self:len()
 	return (self:sub(len, len):lower() == 's') and '\'' or '\'s'
@@ -15,23 +19,23 @@ function string:AOrAn()
 	return self:match('^h?[AaEeIiOoUu]') and 'an' or 'a'
 end
 
-function string:IsSteamID32(str)
+function string:IsSteamID32()
 	return self:match('^STEAM_%d:%d:%d+$')
 end
 
 function string:IsSteamID64()
-	return (self:len() == 17) and (self:sub(1, 4) == '7656')
+	return #self == 17 and self:StartWith('7656')
 end
 
 function string:HtmlSafe()
-    return self:gsub('&', '&amp;'):gsub('<', '&lt;'):gsub('>', '&gt;')
+	return self:gsub('&', '&amp;'):gsub('<', '&lt;'):gsub('>', '&gt;')
 end
 
 local formathex = '%%%02X'
 function string:URLEncode()
-	return string.gsub(string.gsub(string.gsub(self, '\n', '\r\n'), '([^%w ])', function(c) 
-		return string.format(formathex, string.byte(c)) 
-	end), ' ', '+')   
+	return string.gsub(string.gsub(string.gsub(self, '\n', '\r\n'), '([^%w ])', function(c)
+		return string.format(formathex, string.byte(c))
+	end), ' ', '+')
 end
 
 function string:URLDecode()
@@ -139,31 +143,4 @@ function string.FormatTime(num, limit)
 	end
 
 	return str
-end
-
--- Faster implementation
-local totable = string.ToTable
-local string_sub = string.sub
-local string_find = string.find
-local string_len = string.len
-function string.Explode(separator, str, withpattern)
-	if (separator == '') then return totable(str) end
-
-	if withpattern == nil then
-		withpattern = false
-	end
-
-	local ret = {}
-	local current_pos = 1
-
-	for i = 1, string_len(str) do
-		local start_pos, end_pos = string_find(str, separator, current_pos, not withpattern)
-		if not start_pos then break end
-		ret[i] = string_sub(str, current_pos, start_pos - 1)
-		current_pos = end_pos + 1
-	end
-
-	ret[#ret + 1] = string_sub(str, current_pos)
-
-	return ret
 end

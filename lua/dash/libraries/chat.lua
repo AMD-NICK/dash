@@ -1,33 +1,44 @@
 chat = chat or {}
+chat.GetTable = chat.GetTable or setmetatable({}, {
+	__call = function(self)
+		return self
+	end
+})
 
-local chats = {}
+setmetatable(chat,{
+	__call = function(self, name)
+		return self.Register(name)
+	end,
+})
+
+
+
+local chats = chat.GetTable
 
 local CHAT = {}
 CHAT.__index = CHAT
 
 debug.getregistry().Chat = CHAT
 
-local net_Start 	= net.Start
-local net_Send 		= net.Send
-local net_Broadcast = net.Broadcast
+local net_Start = net.Start
+local net_Send  = net.Send
 local ents_FindInSphere = ents.FindInSphere
 
 function chat.Register(name)
-	local t = {
+	local OBJ = setmetatable({
 		NetworkString = 'chat_' .. name,
-		_Write = net.WriteType,
-		_Read = net.ReadType,
 		SendFunc = net.Broadcast,
-	}
+		Name = name
+	},CHAT)
 
-	chats[name] = t
+	chats[name] = OBJ
 
 	if (SERVER) then
-		util.AddNetworkString(t.NetworkString)
+		util.AddNetworkString(OBJ.NetworkString)
 	else
-		net.Receive(t.NetworkString, function()
+		net.Receive(OBJ.NetworkString, function()
 			if IsValid(LocalPlayer()) then
-				local ret = {t.ReadFunc()}
+				local ret = {OBJ.ReadFunc()}
 				if (#ret > 0) then
 					chat.AddText(unpack(ret))
 				end
@@ -35,7 +46,7 @@ function chat.Register(name)
 		end)
 	end
 
-	return setmetatable(t, CHAT)
+	return setmetatable(OBJ, CHAT)
 end
 
 function chat.Send(name, ...)
@@ -55,17 +66,16 @@ function CHAT:Read(func)
 	return self
 end
 
-function CHAT:Filter(func)
+function CHAT:Filter(fFilter)
 	self.SendFunc = function(...)
-		net_Send(func(...))
+		net_Send(fFilter(...))
 	end
+
 	return self
 end
 
-function CHAT:SetLocal(radius) -- first arg must be a player
-	self.SendFunc = function(pl)
-		net_Send(table.Filter(ents_FindInSphere(pl:EyePos(), radius), function(v)
-			return v:IsPlayer()
-		end))
-	end
+function CHAT:SetLocal(iRadius) -- first arg must be a player
+	return self:Filter(function(pl)
+		return table.Filter(ents_FindInSphere(pl:EyePos(), iRadius), PLAYER.IsPlayer)
+	end)
 end

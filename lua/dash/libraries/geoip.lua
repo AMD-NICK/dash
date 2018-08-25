@@ -1,11 +1,11 @@
-geoip 				= {}
+geoip               = {}
 
-local geoip 		= geoip
-local http_fetch 	= http.Fetch
+local geoip         = geoip
+local http_fetch    = http.Fetch
 local json_to_table = util.JSONToTable
 
-local failures		 = 0
-local result_cache	 = {}
+local failures      = 0
+local result_cache  = {}
 
 
 function geoip.Get(ip, cback, failure)
@@ -22,10 +22,10 @@ function geoip.Get(ip, cback, failure)
 				cback(res)
 			end
 		end, function()
-			if (failures <= 5) then 
+			if (failures <= 5) then
 				timer.Simple(5, function()
 					failures = failures + 1
-					geoip.Get(ip, cback)
+					geoip.Get(ip, cback, failure)
 				end)
 			else
 				failure()
