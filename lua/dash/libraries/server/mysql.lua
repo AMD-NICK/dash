@@ -17,8 +17,8 @@ local DATABASE = {
 		return self.Database .. '@' .. self.Hostname .. ':' ..  self.Port
 	end
 }
-DATABASE.__concat 	= DATABASE.__tostring
-DATABASE.__index 	= DATABASE
+DATABASE.__concat = DATABASE.__tostring
+DATABASE.__index  = DATABASE
 
 local STATEMENT = {
 	__tostring = function(self)
@@ -28,24 +28,23 @@ local STATEMENT = {
 		return self:Run(...)
 	end
 }
-STATEMENT.__concat 	= STATEMENT.__tostring
-STATEMENT.__index 	= STATEMENT
+STATEMENT.__concat  = STATEMENT.__tostring
+STATEMENT.__index   = STATEMENT
 
-_R.MySQLDatabase 	= DATABASE
-_R.MySQLStatement 	= STATEMENT
+_R.MySQLDatabase    = DATABASE
+_R.MySQLStatement   = STATEMENT
 
-local tostring 		= tostring
-local SysTime 		= SysTime
-local pairs 		= pairs
-local select 		= select
-local isfunction 	= isfunction
+local tostring      = tostring
+local SysTime       = SysTime
+local pairs         = pairs
+local select        = select
 local string_format = string.format
-local string_gsub 	= string.gsub
+local string_gsub   = string.gsub
 
-local color_purple 	= Color(185,0,255)
-local color_white 	= Color(250,250,250)
+local color_purple  = Color(185,0,255)
+local color_white   = Color(250,250,250)
+local color_red     = Color(250,20,20)
 
-local query_queue	= {}
 
 function mysql.Connect(hostname, username, password, database, port, optional_socketpath, optional_clientflags)
 	local db_obj = setmetatable({
@@ -53,7 +52,7 @@ function mysql.Connect(hostname, username, password, database, port, optional_so
 		Username = username,
 		Password = password,
 		Database = database,
-		Port 	 = port,
+		Port     = port,
 	}, DATABASE)
 
 	if mysql.GetTable[tostring(db_obj)] then
@@ -65,11 +64,11 @@ function mysql.Connect(hostname, username, password, database, port, optional_so
 	if db_obj.Error then
 		db_obj:Log(db_obj.Error)
 	elseif (db_obj.Handle == false) then
-		db_obj:Log('Failed to connect to database ' .. db_obj .. '.')
+		db_obj:Log('Connection failed!')
 	else
 		mysql.GetTable[tostring(db_obj)] = db_obj
 
-		db_obj:Log('Connected to database ' .. db_obj .. ' successfully.')
+		db_obj:Log('Connected successfully')
 	end
 
 	--self:SetOption(MYSQL_SET_CLIENT_IP, GetConVarString('ip'))
@@ -96,7 +95,12 @@ function DATABASE:Escape(value)
 end
 
 function DATABASE:Log(message)
-	MsgC(color_purple, '[MySQL] ', color_white, tostring(message) .. '\n')
+	MsgC(color_purple, '[MySQL] ', color_white, tostring(self) .. ' => ' .. tostring(message) .. '\n')
+end
+
+function DATABASE:LogError(message)
+	MsgC(color_purple, '[MySQL] ', color_red, tostring(message) .. '\n')
+	-- hook.Run("MySQLError",self,message)
 end
 
 local quote = '"'
@@ -107,13 +111,13 @@ local retry_errors = {
 
 local function handlequery(db, query, results, cback)
 	if (results[1].error ~= nil) then
-		db:Log(results[1].error)
+		db:LogError('handlequery err: ' .. results[1].error .. '\n\nQuery:\n' .. query)
 		if retry_errors[results[1].error] then
 			if query_queue[query] then
 				query_queue[query].Trys = query_queue[query].Trys + 1
 			else
 				query_queue[query] = {
-					Db 		= db, 
+					Db 		= db,
 					Query 	= query,
 					Trys 	= 0,
 					Cback 	= cback
@@ -150,7 +154,7 @@ function DATABASE:QuerySync(query, ...)
 			data, lastid, affected, time = _data, _lastid, _affected, _time
 		end)
 	end
-	
+
 	while (not data) and (start >= SysTime()) do
 		self:Poll()
 	end
@@ -170,14 +174,14 @@ function DATABASE:Prepare(query)
 		Query = query,
 		Count = varcount,
 		Values = values,
-		Run = function(self, ...)
+		Run = function(_, ...)
 			local cback = select(varcount + 1, ...)
 			for i = 1, varcount do
 				values[i] = quote .. db:Escape(select(i, ...)) .. quote
 			end
-			local query = string_format(query, unpack(values))
-			dbhandle:Query(query, function(results)
-				handlequery(db, query, results, cback)
+			local q = string_format(query, unpack(values))
+			dbhandle:Query(q, function(results)
+				handlequery(db, q, results, cback)
 			end)
 		end,
 	}, STATEMENT)
@@ -206,7 +210,7 @@ function DATABASE:GetServerVersion()
 end
 
 --[[function STATEMENT:Run(...)
-	
+
 end]]
 
 function STATEMENT:RunSync(...)
