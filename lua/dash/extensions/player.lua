@@ -1,6 +1,7 @@
 local PLAYER = FindMetaTable 'Player'
-local ENTITY = FindMetaTable 'Entity'
+-- local GetTable = ENTITY.GetTable
 
+-- Utils
 function player.Find(info)
 	info = tostring(info)
 	for k, v in ipairs(player.GetAll()) do
@@ -14,6 +15,11 @@ function player.GetStaff()
 	return table.Filter(player.GetAll(), PLAYER.IsAdmin)
 end
 
+-- meta. Вот сука супы читаки. Я просто ору. Почему я так не сделал?
+-- function PLAYER:__index(key)
+-- 	return PLAYER[key] or ENTITY[key] or (GetTable(self) or {})[key]
+-- end
+
 function PLAYER:Timer(name, time, reps, callback, failure)
 	name = self:SteamID64() .. '-' .. name
 	timer.Create(name, time, reps, function()
@@ -23,29 +29,32 @@ function PLAYER:Timer(name, time, reps, callback, failure)
 			if (failure) then
 				failure()
 			end
-			
-			timer.Destroy(name)
+
+			timer.Remove(name)
 		end
 	end)
 end
 
+function PLAYER:TimerRepsLeft(name)
+	return timer.RepsLeft(self:SteamID64() .. '-' .. name)
+end
+
 function PLAYER:DestroyTimer(name)
-	timer.Destroy(self:SteamID64() .. '-' .. name)
+	timer.Remove(self:SteamID64() .. '-' .. name)
 end
 
 -- Fix for https://github.com/Facepunch/garrysmod-issues/issues/2447
-local telequeue = {}
-local setpos = ENTITY.SetPos
-function ENTITY:SetPos(pos)
-	if isplayer(self) then
-		telequeue[self] = pos
-	end
-	return setpos(self, pos)
-end
+-- Я удалил. Не знаю, чем мне это помогает
+-- local telequeue = {}
+-- local setpos = ENTITY.SetPos
+-- function PLAYER:SetPos(pos)
+-- 	telequeue[self] = pos
+-- end
 
-hook.Add('FinishMove', 'SetPos.FinishMove', function(pl)
-	if telequeue[pl] then
-		setpos(pl, telequeue[pl])
-		telequeue[pl] = nil
-	end
-end)
+-- hook.Add('FinishMove', 'SetPos.FinishMove', function(pl)
+-- 	if telequeue[pl] then
+-- 		setpos(pl, telequeue[pl])
+-- 		telequeue[pl] = nil
+-- 		return true
+-- 	end
+-- end)
