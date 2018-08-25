@@ -5,10 +5,10 @@ local ipairs 				= ipairs
 
 function string.Wrap(font, text, width)
 	surface_SetFont(font)
-		
+
 	local sw = surface_GetTextSize(' ')
 	local ret = {}
-		
+
 	local w = 0
 	local s = ''
 
@@ -17,7 +17,7 @@ function string.Wrap(font, text, width)
 		local t2 = string_Explode(' ', t[i], false)
 		for i2 = 1, #t2 do
 			local neww = surface_GetTextSize(t2[i2])
-				
+
 			if (w + neww >= width) then
 				ret[#ret + 1] = s
 				w = neww + sw
@@ -31,7 +31,7 @@ function string.Wrap(font, text, width)
 		w = 0
 		s = ''
 	end
-		
+
 	if (s ~= '') then
 		ret[#ret + 1] = s
 	end
