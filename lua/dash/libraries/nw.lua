@@ -1,16 +1,16 @@
 --[[
-local var = nw.Register 'MyVar' 	-- You MUST call this ALL shared
-	var:Write(net.WriteUInt, 32) 	-- Write function
-	var:Read(net.ReadUInt, 32) 		-- Read function
-	var:SetPlayer() 				-- Registers the var for use on players 
-	var:SetLocalPlayer() 			-- Optionally set the var to only network to the player its set on, no need to call SetPlayer with this
-	var:SetGlobal() 				-- Registers the var for use with nw.SetGlobal
-	var:SetNoSync() 				-- Stops the var from syncing to new players, SetLocalPlayer does this for you.
+local var = nw.Register 'MyVar'     -- You MUST call this ALL shared
+	var:Write(net.WriteUInt, 32)    -- Write function
+	var:Read(net.ReadUInt, 32)      -- Read function
+	var:SetPlayer()                 -- Registers the var for use on players
+	var:SetLocalPlayer()            -- Optionally set the var to only network to the player its set on, no need to call SetPlayer with this
+	var:SetGlobal()                 -- Registers the var for use with nw.SetGlobal
+	var:SetNoSync()                 -- Stops the var from syncing to new players, SetLocalPlayer does this for you.
 	var:Filter(function(ent, value) -- Sets a var to only send to players you return in your callback
 		return player.GetWhatever() -- return table players
 	end)
 
-nw.WaitForPlayer(player, callback) 	-- Calls your callback when the player is ready to recieve net messages
+nw.WaitForPlayer(player, callback)  -- Calls your callback when the player is ready to recieve net messages
 
 -- Set Functions
 ENTITY:SetNetVar(var, value)
@@ -22,44 +22,43 @@ nw.GetGlobal(var)
 ]]
 
 
-nw 				= {}
+nw = {}
 
-local vars 		= {}
-local mappings 	= {}
-local data 		= {
+local vars     = {}
+local mappings = {}
+local data     = {
 	[0] = {}
 }
-local globals 	= data[0]
+local globals   = data[0]
 local callbacks = {}
 
-local NETVAR 	= {}
-NETVAR.__index 	= NETVAR
+local NETVAR   = {}
+NETVAR.__index = NETVAR
 
 debug.getregistry().Netvar = NETVAR
 
-local bitmap 	= {
-	[3]		= 3,
-	[7] 	= 4,
-	[15] 	= 5,
-	[31] 	= 6,
-	[63] 	= 7,
-	[127] 	= 8
+local bitmap = {
+	[3]	  = 3,
+	[7]   = 4,
+	[15]  = 5,
+	[31]  = 6,
+	[63]  = 7,
+	[127] = 8
 }
 
-local bitcount 	= 2
+local bitcount = 2
 
-local ENTITY 	= FindMetaTable 'Entity'
+local ENTITY = FindMetaTable 'Entity'
 
-local pairs 	= pairs
-local Entity 	= Entity
+local pairs  = pairs
+local Entity = Entity
 
 local net_WriteUInt = net.WriteUInt
-local net_ReadUInt 	= net.ReadUInt
-local net_Start 	= net.Start
-local net_Send 		= (SERVER) and net.Send or net.SendToServer
+local net_ReadUInt  = net.ReadUInt
+local net_Start     = net.Start
+local net_Send      = SERVER and net.Send or net.SendToServer
 local net_Broadcast = net.Broadcast
-local player_GetAll = player.GetAll
-local sorted_pairs 	= SortedPairsByMemberValue
+local sorted_pairs  = SortedPairsByMemberValue
 
 function nw.Register(var) -- You must always call this on both the client and server. It will serioulsy break shit if you don't.
 	local t = {
@@ -83,7 +82,7 @@ function nw.Register(var) -- You must always call this on both the client and se
 	else
 		net.Receive(t.NetworkString, function()
 			local index, value = t:_Read()
-			
+
 			if (not data[index]) then
 				data[index] = {}
 			end
@@ -112,7 +111,7 @@ function NETVAR:Read(func, opt)
 end
 
 function NETVAR:Filter(func)
-	self.SendFunc = function(self, ent, value, recipients)
+	self.SendFunc = function(_, ent, value, recipients)
 		net_Send(recipients or func(ent, value))
 	end
 	return self:_Construct()
@@ -151,7 +150,7 @@ end
 
 function NETVAR:_CallHook(index, value)
 	if self.Hook then
-		if (index ~= 0) then
+		if (index ~= 0) then -- not global
 			hook.Call(self.Hook, GAMEMODE, Entity(index), value)
 		else
 			hook.Call(self.Hook, GAMEMODE, value)
@@ -164,36 +163,36 @@ function NETVAR:_Construct()
 	local ReadFunc 	= self.ReadFunc
 
 	if self.PlayerVar then
-		self._Write = function(self, ent, value)
+		self._Write = function(_, ent, value)
 			net_WriteUInt(ent:EntIndex(), 7)
 			WriteFunc(value)
 		end
-		self._Read = function(self)
+		self._Read = function(_)
 			return net_ReadUInt(7), ReadFunc()
 		end
 	elseif self.LocalPlayerVar then
-		self._Write = function(self, ent, value)
+		self._Write = function(_, ent, value)
 			WriteFunc(value)
 		end
-		self._Read = function(self)
+		self._Read = function(_)
 			return LocalPlayer():EntIndex(), ReadFunc()
 		end
-		self.SendFunc = function(self, ent, value, recipients)
+		self.SendFunc = function(_, ent, value, recipients)
 			net_Send(ent)
 		end
 	elseif self.GlobalVar then
-		self._Write = function(self, ent, value)
+		self._Write = function(_, ent, value)
 			WriteFunc(value)
 		end
-		self._Read = function(self)
+		self._Read = function(_)
 			return 0, ReadFunc()
 		end
 	else
-		self._Write = function(self, ent, value)
+		self._Write = function(_, ent, value)
 			net_WriteUInt(ent:EntIndex(), 12)
 			WriteFunc(value)
 		end
-		self._Read = function(self)
+		self._Read = function(_)
 			return net_ReadUInt(12), ReadFunc()
 		end
 	end
@@ -263,7 +262,7 @@ if (SERVER) then
 					net_WriteUInt(index, 12)
 				net_Broadcast()
 			end
-			
+
 			data[index] = nil
 		end
 	end)
@@ -299,7 +298,7 @@ if (SERVER) then
 		end
 
 		data[index][var] = value
-		
+
 		if (value ~= nil) then
 			vars[var]:_Send(self, value)
 		else
@@ -324,6 +323,7 @@ else
 		local index, id = net_ReadUInt(12), net_ReadUInt(bitcount)
 		if data[index] and mappings[id] then
 			data[index][mappings[id].Name] = nil
+			mappings[id]:_CallHook(index, nil)
 		end
 	end)
 
@@ -331,6 +331,7 @@ else
 		local index, id = net_ReadUInt(7), net_ReadUInt(bitcount)
 		if data[index] and mappings[id] then
 			data[index][mappings[id].Name] = nil
+			mappings[id]:_CallHook(index, nil)
 		end
 	end)
 
