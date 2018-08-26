@@ -13,7 +13,7 @@ TEXTURE.__concat = TEXTURE.__tostring
 debug.getregistry().Texture = TEXTURE
 
 local textures 	= {}
-local proxyurl 	= "https://YOUR_SITE.COM/?url=%s&width=%i&height=%i&format=%s"
+local proxyurl 	= 'https://YOUR_SITE.COM/?url=%s&width=%i&height=%i&format=%s'
 
 
 if (not file.IsDir('texture', 'DATA')) then
@@ -56,10 +56,6 @@ end
 
 function texture.SetProxy(url)
 	proxyurl = url
-end
-
-function texture.GetProxy()
-	return proxyurl,2
 end
 
 
@@ -133,10 +129,10 @@ end
 
 function TEXTURE:Download(url, onsuccess, onfailure)
 	if (self.Name == nil) then
-		self.Name = "Web Material: " .. url
+		self.Name = 'Web Material: ' .. url
 	end
 	self.URL = url
-	self.File = "texture/" .. self:GetUID() .. ".png"
+	self.File = 'texture/' .. self:GetUID() .. '.png'
 
 	if self.Cache and file.Exists(self.File, 'DATA') then
 		self.IMaterial = Material('data/' .. self.File, 'smooth')
@@ -181,11 +177,11 @@ function TEXTURE:Download(url, onsuccess, onfailure)
 end
 
 function TEXTURE:RenderManual(func, callback)
-	local cachefile = "texture/" .. self:GetUID() .. "-render.png"
+	local cachefile = 'texture/' .. self:GetUID() .. '-render.png'
 
 	if self.Cache and file.Exists(cachefile, 'DATA') then
 		self.File = cachefile
-		self.IMaterial = Material("data/" .. self.File, "smooth")
+		self.IMaterial = Material('data/' .. self.File, 'smooth')
 
 		if callback then
 			callback(self, self.IMaterial)
@@ -260,7 +256,7 @@ local logo = texture.Create('example')
 		surface.SetMaterial(self:GetMaterial())
 		surface.DrawTexturedRect(0, 0, w, h)
 
-		draw.SimpleText("hello!!!!", "CloseCaption_BoldItalic", 100, 100, Color(0,0,0), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+		draw.SimpleText('hello!!!!', 'CloseCaption_BoldItalic', 100, 100, Color(0,0,0), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
 	end)
 
 hook.Add('HUDPaint', 'awdawd', function()
