@@ -17,38 +17,47 @@ function redis.GetSubscribers()
 	return subscribers
 end
 
-function redis.ConnectSubscriber(ip, port, autopoll, autocommit) -- no auth like clients, iptables or localhost it I suppose.
-	local self, err = redis.CreateSubscriber()
+function redis.ConnectSubscriber(hostname, port, autopoll, autocommit) -- no auth like clients, iptables or localhost it I suppose.
+	for k, v in ipairs(redis.GetSubscribers()) do
+		if (v.Hostname == hostname) and (v.Port == port) and (v.AutoPoll == autopoll) and (v.AutoCommit == autocommit) then
+			v:Log('Recycled connection.')
+			return v
+		end
+	end
 
-	if (not self) then
+	local sub, err = redis.CreateSubscriber()
+
+	if (not sub) then
 		error(err)
 	end
 
-	self.Hostname = ip
-	self.Port = port
-	self.PendingCommands = 0
-	self.Subscriptions = {}
-	self.PSubscriptions = {}
+	sub.Hostname = hostname
+	sub.Port = port
+	sub.AutoPoll = autopoll
+	sub.AutoCommit = autocommit
+	sub.PendingCommands = 0
+	sub.Subscriptions = {}
+	sub.PSubscriptions = {}
 
-	if (not self:TryConnect(ip, port)) then
-		return self
+	if (not sub:TryConnect(hostname, port)) then
+		return sub
 	end
 
 	if (autopoll ~= false) or (autocommit ~= false) then
-		hook.Add('Think', self, function()
-			if (autocommit ~= false) and (self.PendingCommands > 0) then
-				self:Commit()
+		hook.Add('Think', sub, function()
+			if (autocommit ~= false) and (sub.PendingCommands > 0) then
+				sub:Commit()
 			end
 			if (autopoll ~= false) then
-				self:Poll()
+				sub:Poll()
 			end
 		end)
 	end
 
-	table.insert(subscribers, self)
+	table.insert(subscribers, sub)
 	subscribercount = subscribercount + 1
 
-	return self
+	return sub
 end
 
 
@@ -61,7 +70,7 @@ function REDIS_SUBSCRIBER:OnDisconnected()
 	if (not hook.Call('RedisSubscriberDisconnected', nil, self)) then
 		timer.Create('RedisSubscriberRetryConnect', 1, 0, function()
 			if (not IsValid(self)) or self:TryConnect(self.Hostname, self.Port) then
-				timer.Destroy('RedisSubscriberRetryConnect')
+				timer.Remove('RedisSubscriberRetryConnect')
 			end
 		end)
 	end

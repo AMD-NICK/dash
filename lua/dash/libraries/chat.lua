@@ -74,8 +74,10 @@ function CHAT:Filter(fFilter)
 	return self
 end
 
-function CHAT:SetLocal(iRadius) -- first arg must be a player
-	return self:Filter(function(pl)
-		return table.Filter(ents_FindInSphere(pl:EyePos(), iRadius), PLAYER.IsPlayer)
-	end)
+function CHAT:SetLocal(radius) -- first arg to chat.Send must be a player if this is used
+	self.SendFunc = function(pl)
+		net_Send(table.Filter(ents_FindInSphere(pl:EyePos(), radius), function(v)
+			return v:IsPlayer()
+		end))
+	end
 end

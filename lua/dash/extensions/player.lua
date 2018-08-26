@@ -1,5 +1,5 @@
 local PLAYER = FindMetaTable 'Player'
--- local GetTable = ENTITY.GetTable
+-- local ENTITY = FindMetaTable 'Entity'
 
 -- Utils
 function player.Find(info)
@@ -15,10 +15,13 @@ function player.GetStaff()
 	return table.Filter(player.GetAll(), PLAYER.IsAdmin)
 end
 
--- meta. Вот сука супы читаки. Я просто ору. Почему я так не сделал?
+
+-- meta. Errors
+-- local GetTable = ENTITY.GetTable
 -- function PLAYER:__index(key)
 -- 	return PLAYER[key] or ENTITY[key] or (GetTable(self) or {})[key]
 -- end
+
 
 function PLAYER:Timer(name, time, reps, callback, failure)
 	name = self:SteamID64() .. '-' .. name
@@ -43,8 +46,9 @@ function PLAYER:DestroyTimer(name)
 	timer.Remove(self:SteamID64() .. '-' .. name)
 end
 
+if (CLIENT) then return end
+
 -- Fix for https://github.com/Facepunch/garrysmod-issues/issues/2447
--- Я удалил. Не знаю, чем мне это помогает
 -- local telequeue = {}
 -- local setpos = ENTITY.SetPos
 -- function PLAYER:SetPos(pos)

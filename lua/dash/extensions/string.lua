@@ -49,22 +49,22 @@ function string.ExplodeQuotes(str) -- Re-do this one of these days
 	local res = {}
 	local ind = 1
 	while true do
-		local sInd, start = str:find('[^%s]', ind)
+		local sInd = str:find('[^%s]', ind)
 		if not sInd then break end
 		ind = sInd + 1
 		local quoted = str:sub(sInd, sInd):match('["\']') and true or false
-		local fInd, finish = str:find(quoted and '["\']' or '[%s]', ind)
+		local fInd = str:find(quoted and '["\']' or '[%s]', ind)
 		if not fInd then break end
 		ind = fInd + 1
-		local str = str:sub(quoted and sInd + 1 or sInd, fInd - 1)
-		res[#res + 1] = str
+		local s = str:sub(quoted and sInd + 1 or sInd, fInd - 1)
+		res[#res + 1] = s
 	end
 	return res
 end
 
 function string:StripPort()
 	local p = self:find(':')
-	return (not p) and ip or self:sub(1, p - 1)
+	return (not p) and self or self:sub(1, p - 1)
 end
 
 function string.FromNumbericIP(ip)
@@ -78,7 +78,7 @@ local TIME_MINUTE 	= TIME_SECOND * 60
 local TIME_HOUR 	= TIME_MINUTE * 60
 local TIME_DAY 		= TIME_HOUR * 24
 local TIME_WEEK 	= TIME_DAY * 7
-local TIME_MONTH 	= TIME_DAY * (365.2425/12)
+local TIME_MONTH 	= TIME_DAY * (365.2425 / 12)
 local TIME_YEAR 	= TIME_DAY * 365.2425
 
 local function plural(a, n)
@@ -102,7 +102,7 @@ function string.FormatTime(num, limit)
 			local c = math.floor(num / TIME_WEEK)
 			ret[#ret + 1] = c .. ' ' .. plural('week', c)
 			num = num - TIME_WEEK * c
-		elseif (num >= TIME_DAY) or (templimit <= -4 )then
+		elseif (num >= TIME_DAY) or (templimit <= -4) then
 			local c = math.floor(num / TIME_DAY)
 			ret[#ret + 1] = c .. ' ' .. plural('day', c)
 			num = num - TIME_DAY * c
@@ -143,4 +143,39 @@ function string.FormatTime(num, limit)
 	end
 
 	return str
+end
+
+-- Faster implementation
+local totable = string.ToTable
+local string_sub = string.sub
+local string_find = string.find
+local string_len = string.len
+function string.Explode(separator, str, withpattern)
+	if (separator == '') then return totable(str) end
+
+	if withpattern == nil then
+		withpattern = false
+	end
+
+	local ret = {}
+	local current_pos = 1
+
+	for i = 1, string_len(str) do
+		local start_pos, end_pos = string_find(str, separator, current_pos, not withpattern)
+		if not start_pos then break end
+		ret[i] = string_sub(str, current_pos, start_pos - 1)
+		current_pos = end_pos + 1
+	end
+
+	ret[#ret + 1] = string_sub(str, current_pos)
+
+	return ret
+end
+
+function string:MaxCharacters(num, withellipses)
+	if (#self <= num) then return self end
+
+	local str = self:sub(1, num)
+
+	return withellipses and (str .. '...') or str
 end

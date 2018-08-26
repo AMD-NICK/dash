@@ -14,7 +14,7 @@ function util.Tracer(vecStart, vecEnd, pEntity, iAttachment, flVelocity, bWhiz, 
 	data:SetOrigin(vecEnd)
 	data:SetEntity(pEntity)
 	data:SetScale(flVelocity)
-	
+
 	if (iParticleID ~= nil) then
 		data:SetHitBox(iParticleID)
 	end
@@ -37,7 +37,7 @@ function util.Tracer(vecStart, vecEnd, pEntity, iAttachment, flVelocity, bWhiz, 
 	if pCustomTracerName then
 		util.Effect(pCustomTracerName, data)
 	else
-		util.Effect("Tracer", data)
+		util.Effect('Tracer', data)
 	end
 end
 
@@ -103,7 +103,7 @@ end
 local b = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
 function util.Base64Decode(data)
 	data = string.gsub(data, '[^'..b..'=]', '')
-	return (data:gsub('.', function(x)
+	return data:gsub('.', function(x)
 		if (x == '=') then return '' end
 		local r,f='',(b:find(x)-1)
 		for i=6,1,-1 do r=r..(f%2^i-f%2^(i-1)>0 and '1' or '0') end
@@ -113,7 +113,7 @@ function util.Base64Decode(data)
 		local c=0
 		for i=1,8 do c=c+(x:sub(i,i)=='1' and 2^(8-i) or 0) end
 		return string.char(c)
-	end))
+	end)
 end
 
 function resource.AddDir(dir, recursive)

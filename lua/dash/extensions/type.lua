@@ -15,33 +15,36 @@ local NEXTBOT 	= FindMetaTable 'NextBot'
 local VEHICLE 	= FindMetaTable 'Vehicle'
 
 local entmts = {
-	[ENTITY] 	= true,
-	[VEHICLE] 	= true,
-	[PHYS] 		= true,
-	[WEAPON] 	= true,
-	[NPC] 		= true,
-	[PLAYER] 	= true,
+	[ENTITY]  = true,
+	[VEHICLE] = true,
+	[PHYS]    = true,
+	[WEAPON]  = true,
+	[NPC]     = true,
+	[PLAYER]  = true,
 }
-if (SERVER) then entmts[NEXTBOT] = true end
+
+if (SERVER) then
+	entmts[NEXTBOT] = true
+end
 
 function isstring(v)
-	return (getmetatable(v) == STRING)
+	return getmetatable(v) == STRING
 end
 
 function isangle(v)
-	return (getmetatable(v) == ANGLE)
+	return getmetatable(v) == ANGLE
 end
 
 function ismatrix(v)
-	return (getmetatable(v) == MATRIX)
+	return getmetatable(v) == MATRIX
 end
 
 function isvector(v)
-	return (getmetatable(v) == VECTOR)
+	return getmetatable(v) == VECTOR
 end
 
 function ismaterial(v)
-	return (getmetatable(v) == MATERIAL)
+	return getmetatable(v) == MATERIAL
 end
 
 function isnumber(v)
@@ -53,12 +56,12 @@ function isbool(v)
 end
 
 function isentity(v)
-	return (entmts[getmetatable(v)] == true)
+	return entmts[getmetatable(v)] == true
 end
 IsEntity = isentity
 
 function isplayer(v)
-	return (getmetatable(v) == PLAYER)
+	return getmetatable(v) == PLAYER
 end
 
 

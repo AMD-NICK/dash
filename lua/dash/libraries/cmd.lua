@@ -310,16 +310,17 @@ if (SERVER) then
 			if (cmdobj:CanRun(pl) == false) or (hook.Call('cmd.CanRunCommand', nil, pl, cmdobj, args) == false) then return end
 
 			if pl:IsPlayer() then
-				if (not pl.CmdLastRun) then pl.CmdLastRun = {} end
+				if (not pl.CmdCooldown) then pl.CmdCooldown = {} end
 
-				if pl.CmdLastRun[name] and (pl.CmdLastRun[name] > CurTime()) then
-					return hook.Call('cmd.OnCommandError', nil, pl, cmdobj, cmd.ERROR_COMMAND_COOLDOWN, {math.ceil(pl.CmdLastRun[name] - CurTime()), name})
+				if pl.CmdCooldown[name] and (pl.CmdCooldown[name] > CurTime()) then
+					return hook.Call('cmd.OnCommandError', nil, pl, cmdobj, cmd.ERROR_COMMAND_COOLDOWN, {math.ceil(pl.CmdCooldown[name] - CurTime()), name})
 				end
-
-				pl.CmdLastRun[name] = CurTime() + cmdobj:GetCooldown()
 			end
 
 			local succ, parsedargs = cmd.Parse(pl, cmdobj, table.concat(args, ' '))
+			if (pl:IsPlayer()) then
+				pl:SetCommandCooldown(cmdobj, (succ ~= false) and cmdobj:GetCooldown() or 0.25)
+			end
 
 			if (succ ~= false) then
 				hook.Call('cmd.OnCommandRun', nil, pl, cmdobj, parsedargs, cmdobj:Run(pl, unpack(parsedargs)))
@@ -350,6 +351,10 @@ function PLAYER:RunCommand(command, ...)
 	end
 end
 
+function PLAYER:SetCommandCooldown(cmdobj, time)
+	if (not self.CmdCooldown) then self.CmdCooldown = {} end
+	self.CmdCooldown[cmdobj:GetName()] = CurTime() + time
+end
 
 
 -- Set

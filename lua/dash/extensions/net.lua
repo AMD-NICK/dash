@@ -4,10 +4,8 @@ setmetatable(net, {
 	end
 })
 
-
-local IsValid = IsValid
-local Entity = Entity
-
+local IsValid   = IsValid
+local Entity    = Entity
 local WriteUInt = net.WriteUInt
 local ReadUInt  = net.ReadUInt
 
@@ -131,4 +129,3 @@ function net.Ping(msg, recipients)
 	Start(msg)
 	Send(recipients)
 end
-

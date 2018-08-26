@@ -74,7 +74,6 @@ function draw.TextRotated(text, x, y, color, font, ang)
 	--render.PushFilterMin(TEXFILTER.ANISOTROPIC)
 	surface.SetFont(font)
 	surface.SetTextColor(color)
-	surface.GetTextSize(text)
 
 	local m = Matrix()
 	m:SetAngles(Angle(0, ang, 0))
