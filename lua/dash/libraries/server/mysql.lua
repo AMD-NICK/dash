@@ -45,6 +45,8 @@ local color_purple  = Color(185,0,255)
 local color_white   = Color(250,250,250)
 local color_red     = Color(250,20,20)
 
+local query_queue = {}
+
 
 function mysql.Connect(hostname, username, password, database, port, optional_socketpath, optional_clientflags)
 	local db_obj = setmetatable({
