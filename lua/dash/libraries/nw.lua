@@ -38,12 +38,14 @@ NETVAR.__index = NETVAR
 debug.getregistry().Netvar = NETVAR
 
 local bitmap = {
-	[3]	  = 3,
+	[3]   = 3,
 	[7]   = 4,
 	[15]  = 5,
 	[31]  = 6,
 	[63]  = 7,
-	[127] = 8
+	[127] = 8,
+	[255] = 9,
+	[511] = 10
 }
 
 local bitcount = 2

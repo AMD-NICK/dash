@@ -56,12 +56,12 @@ function table.FilterCopy(tab, callback)
 end
 
 function table.ConcatKeys(tab, concatenator)
-	concatenator = concatenator or ''
-	local str = ''
+	concatenator = concatenator or ""
+	local s = ""
 
-	for k, v in pairs(tab) do
-		str = (str ~= '' and concatenator or str) .. k
+	for key in pairs(tab) do
+		s = s .. key .. concatenator
 	end
 
-	return str
+	return s:sub(1, -#concatenator - 1)
 end

@@ -3,8 +3,8 @@ local txnid = 0
 local BLOCK_SIZE = 2^16-2^10
 local BLODK_SIZE_m1 = BLOCK_SIZE - 1
 
-if SERVER then 
-	util.AddNetworkString('pns')
+if SERVER then
+	util.AddNetworkString("pns")
 end
 
 function net.WriteStream(data, targs)
@@ -14,9 +14,11 @@ function net.WriteStream(data, targs)
 	-- iterate over the data to send
 	local count = 0
 	local iter = function()
+		-- print("count", count)
 		local seg = data:sub(count, count + BLODK_SIZE_m1)
 		count = count + BLOCK_SIZE
 
+		-- print("seg", seg, seg == "")
 		return seg
 	end
 
@@ -26,18 +28,15 @@ function net.WriteStream(data, targs)
 
 		-- compression
 		block = util.Compress(block)
+		-- print("block", block, block == "")
 
-		if block then
+		if block ~= "" then
 			local size = block:len()
-			net.Start('pns')
+			net.Start("pns")
 				net.WriteUInt(txnid, 16)
 				net.WriteUInt(size, 16)
 				net.WriteData(block, size)
-			if SERVER then
-			net.Send(targs)
-			else
-			net.SendToServer()
-			end
+			if SERVER then net.Send(targs) else net.SendToServer() end
 		end
 		timer.Simple(0.1, send)
 	end
@@ -45,7 +44,7 @@ function net.WriteStream(data, targs)
 	-- write txnid and chunks to be expected
 	net.WriteUInt(txnid, 16)
 	net.WriteUInt(math.ceil(data:len() / BLOCK_SIZE), 16)
-	
+
 	timer.Simple(0.1, send)
 end
 
@@ -53,21 +52,22 @@ local buckets = {}
 if SERVER then
 	function net.ReadStream(src, callback)
 		if not src then
-			error('stream source must be provided to receive a stream from a player')
+			error("stream source must be provided to receive a stream from a player")
 		end
 		if not callback then
-			error('callback must be provided for stream read completion')
+			error("callback must be provided for stream read completion")
 		end
 		if not buckets[src] then buckets[src] = {} end
-		buckets[src][net.ReadUInt(16)] = {len=net.ReadUInt(16), callback=callback}
+		buckets[src][net.ReadUInt(16)] = {len = net.ReadUInt(16), callback = callback}
 	end
-	net.Receive('pns', function(_,pl)
-		local txnid = net.ReadUInt(16)
-		if not buckets[pl] or not buckets[pl][txnid] then
-			print('could not receive stream from client. player bucket does not exist or txnid invalid')
+	net.Receive("pns", function(_,pl)
+		local id = net.ReadUInt(16)
+		if not buckets[pl] or not buckets[pl][id] then
+			print("could not receive stream from client. player bucket does not exist or txnid invalid")
+			pl:Kick("не хулигань")
 		end
 
-		local bucket = buckets[pl][txnid]
+		local bucket = buckets[pl][id]
 
 		local size = net.ReadUInt(16)
 		local data = net.ReadData(size)
@@ -75,29 +75,29 @@ if SERVER then
 		-- decompression
 		data = util.Decompress(data)
 
-		bucket[#bucket+1] = data
+		bucket[#bucket + 1] = data
 
 		if #bucket == bucket.len then
-			buckets[pl][txnid] = nil
+			buckets[pl][id] = nil
 			bucket.callback(table.concat(bucket))
 		end
 	end)
 else
-	
+
 	function net.ReadStream(callback)
 		if not callback then
-			error('callback must be provided for stream read completion')
+			error("callback must be provided for stream read completion")
 		end
-		buckets[net.ReadUInt(16)] = {len=net.ReadUInt(16), callback=callback}
+		buckets[net.ReadUInt(16)] = {len = net.ReadUInt(16), callback = callback}
 	end
-	
-	net.Receive('pns', function(_)
-		local txnid = net.ReadUInt(16)
-		if not buckets[txnid] then
-			print('could not receive stream from server. txnid invalid.')
+
+	net.Receive("pns", function(_)
+		local id = net.ReadUInt(16)
+		if not buckets[id] then
+			print("could not receive stream from server. txnid invalid.")
 		end
 
-		local bucket = buckets[txnid]
+		local bucket = buckets[id]
 
 		local size = net.ReadUInt(16)
 		local data = net.ReadData(size)
@@ -105,10 +105,10 @@ else
 		-- decompression
 		data = util.Decompress(data)
 
-		bucket[#bucket+1] = data
+		bucket[#bucket + 1] = data
 
 		if #bucket == bucket.len then
-			buckets[txnid] = nil
+			buckets[id] = nil
 			bucket.callback(table.concat(bucket))
 		end
 	end)
