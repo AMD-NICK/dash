@@ -15,21 +15,18 @@ debug.getregistry().Texture = TEXTURE
 local textures 	= {}
 local proxyurl 	= 'https://YOUR_SITE.COM/?url=%s&width=%i&height=%i&format=%s'
 
-
 if (not file.IsDir('texture', 'DATA')) then
 	file.CreateDir 'texture'
 else
 	local files = file.Find('texture/*', 'DATA')
 	if (#files > 1000) then
-		for k, v in ipairs(files) do
+		for _, v in ipairs(files) do
 			file.Delete('texture/' .. v)
 		end
 	end
 end
 
 function texture.Create(name)
-	texture.Delete(name)
-
 	local ret = setmetatable({
 		Name 	= name,
 		URL 	= '',
@@ -58,8 +55,6 @@ function texture.SetProxy(url)
 	proxyurl = url
 end
 
-
-
 function TEXTURE:SetSize(w, h)
 	self.Width, self.Height = w, h
 	return self
@@ -77,11 +72,6 @@ end
 
 function TEXTURE:EnableProxy(enable)
 	self.Proxy = enable
-	return self
-end
-
-function TEXTURE:SetCustomUID(name)
-	self.UID = name
 	return self
 end
 
@@ -122,10 +112,8 @@ function TEXTURE:GetError()
 end
 
 function TEXTURE:IsBusy()
-	return self.Busy == true
+	return (self.Busy == true)
 end
-
-
 
 function TEXTURE:Download(url, onsuccess, onfailure)
 	if (self.Name == nil) then
@@ -142,23 +130,34 @@ function TEXTURE:Download(url, onsuccess, onfailure)
 	else
 		self.Busy = true
 
-		http.Fetch(self.Proxy and string.format(proxyurl, url:URLEncode(), self.Width, self.Height, self.Format) or url, function(body, len, headers, code)
-			if (self.Cache) then
-				file.Write(self.File, body)
-				self.IMaterial = Material('data/' .. self.File, 'smooth')
+		http.Fetch(self.Proxy and string.format(proxyurl, url:URLEncode(), self.Width, self.Height, self.Format) or url, function(body)
+			local isimage = #body:match('[^%c]+') ~= #body -- методом тыка. Проверка браузера епта
+
+			if isimage then
+				if (self.Cache) then
+					file.Write(self.File, body)
+					self.IMaterial = Material('data/' .. self.File, 'smooth')
+				else
+					local tempfile = 'texture/tmp_' .. os.time() .. '_' .. self:GetUID() .. '.png'
+					file.Write(tempfile, body)
+
+					self.IMaterial = Material('data/' .. tempfile, 'smooth')
+
+					timer.Simple(1, function()
+						file.Delete(tempfile)
+					end)
+				end
+
+				if onsuccess then
+					onsuccess(self, self.IMaterial)
+				end
+
 			else
-				local tempfile = 'texture/tmp_' .. os.time() .. '_' .. self:GetUID() .. '.png'
-				file.Write(tempfile, body)
+				self.Error = 'not_image'
 
-				self.IMaterial = Material('data/' .. tempfile, 'smooth')
-
-				timer.Simple(1, function()
-					file.Delete(tempfile)
-				end)
-			end
-
-			if onsuccess then
-				onsuccess(self, self.IMaterial)
+				if onfailure then
+					onfailure(self, self.Error)
+				end
 			end
 
 			self.Busy = false
@@ -187,7 +186,6 @@ function TEXTURE:RenderManual(func, callback)
 			callback(self, self.IMaterial)
 		end
 	else
-
 		local w, h = self.Width, self.Height
 
 		local hookId = 'texture.PostRender' .. self:GetUID()
@@ -235,35 +233,48 @@ function TEXTURE:RenderManual(func, callback)
 end
 
 function TEXTURE:Render(func, callback)
-	return self:RenderManual(function(s,w,h)
+	return self:RenderManual(function(s, w, h)
 		cam.Start2D()
-			func(self, w, h)
+			func(s, w, h)
 		cam.End2D()
 	end, callback)
 end
 
+
+-- Дебаг. Юзать вместе с DRW.UI() или F1 например
+-- local files = file.Find('texture/*', 'DATA')
+-- for _, v in ipairs(files) do file.Delete('texture/' .. v) end
+-- texture.SetProxy("gmd/tools/imghandler?image=%s&size=%i")
+
 /*
-Basic usage
+--Basic usage
 
-local logo = texture.Create('example')
+local function f(a) return function(...)
+	a[1](unpack(a,2), ...)
+end end
+
+local logo = texture.Create('example14')
 	:SetSize(570, 460)
-	:SetFormat('png')
-	:Download('https://i.imgur.com/TZcJ1CK.png', print, print)
-	:Render(function(self, w, h)
-		draw.Box(0, 0, w, h, Color(0,255,0))
+	:Download('https://i.imgur.com/TZcJ1CK.png', f{print,1}, f{print,2})
+	-- :Render(function(s, w, h)
+	-- 	draw.Box(0, 0, w, h, Color(0,255,0))
 
-		surface.SetDrawColor(255,255,255,255)
-		surface.SetMaterial(self:GetMaterial())
-		surface.DrawTexturedRect(0, 0, w, h)
+	-- 	if s:GetMaterial() then
+	-- 		surface.SetDrawColor(color_white)
+	-- 		surface.SetMaterial(s:GetMaterial())
+	-- 		surface.DrawTexturedRect(0, 0, w, h)
 
-		draw.SimpleText('hello!!!!', 'CloseCaption_BoldItalic', 100, 100, Color(0,0,0), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
-	end)
+	-- 		draw.SimpleText('hello!!!!', 'CloseCaption_BoldItalic', 100, 100, Color(0,0,0), TEXT_ALIGN_LEFT, TEXT_ALIGN_TOP)
+	-- 	end
+	-- end)
 
+-- hook.Remove('HUDPaint', 'awdawd')
 hook.Add('HUDPaint', 'awdawd', function()
+	print("logo:GetMaterial()", logo:GetMaterial())
 	if logo:GetMaterial() then
-		surface.SetDrawColor(255,255,255,255)
+		surface.SetDrawColor(color_white)
 		surface.SetMaterial(logo:GetMaterial())
 		surface.DrawTexturedRect(35, 35, 570, 460)
 	end
 end)
-*/
+
