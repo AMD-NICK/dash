@@ -42,6 +42,10 @@ function PLAYER:TimerRepsLeft(name)
 	return timer.RepsLeft(self:SteamID64() .. '-' .. name)
 end
 
+-- function PLAYER:TimerTimeLeft(name)
+-- 	return timer.RepsLeft(self:SteamID64() .. '-' .. name)
+-- end
+
 function PLAYER:DestroyTimer(name)
 	timer.Remove(self:SteamID64() .. '-' .. name)
 end

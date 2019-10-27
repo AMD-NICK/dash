@@ -31,15 +31,14 @@ function string:HtmlSafe()
 	return self:gsub('&', '&amp;'):gsub('<', '&lt;'):gsub('>', '&gt;')
 end
 
-local formathex = '%%%02X'
 function string:URLEncode()
-	return string.gsub(string.gsub(string.gsub(self, '\n', '\r\n'), '([^%w ])', function(c)
-		return string.format(formathex, string.byte(c))
-	end), ' ', '+')
+	return string.gsub(string.gsub(self, '\n', '\r\n'), '([^%w.])', function(c)
+		return string.format('%%%02X', string.byte(c))
+	end)
 end
 
 function string:URLDecode()
-	return self:gsub('+', ' '):gsub('%%(%x%x)', function(hex)
+	return self:gsub('%%(%x%x)', function(hex)
 		return string.char(tonumber(hex, 16))
 	end)
 end

@@ -1,5 +1,9 @@
 require 'tmysql4'
 
+if (not tmysql.Version) or (tmysql.Version < 4.1) then
+	error 'tmysql version is too old! Install 4.1 or later.'
+end
+
 mysql = setmetatable({
 	GetTable = setmetatable({}, {
 		__call = function(self)
@@ -41,14 +45,11 @@ local select        = select
 local string_format = string.format
 local string_gsub   = string.gsub
 
-local color_purple  = Color(185,0,255)
-local color_white   = Color(250,250,250)
-local color_red     = Color(250,20,20)
+local color_prefix, color_text = Color(185,0,255), Color(250,250,250)
 
-local query_queue = {}
+local query_queue   = {}
 
-
-function mysql.Connect(hostname, username, password, database, port, optional_socketpath, optional_clientflags)
+function mysql.Connect(hostname, username, password, database, port, optional_socketpath, optional_clientflags, optional_connectcallback)
 	local db_obj = setmetatable({
 		Hostname = hostname,
 		Username = username,
@@ -57,21 +58,29 @@ function mysql.Connect(hostname, username, password, database, port, optional_so
 		Port     = port,
 	}, DATABASE)
 
-	if mysql.GetTable[tostring(db_obj)] then
-		return mysql.GetTable[tostring(db_obj)]
+	local cached = mysql.GetTable[tostring(db_obj)]
+	if cached then
+		cached:Log('Recycled connection.')
+		return cached
 	end
 
-	db_obj.Handle, db_obj.Error = tmysql.initialize(hostname, username, password, database, port, optional_socketpath, optional_clientflags)
+	db_obj.Handle, db_obj.Error = tmysql.Connect(hostname, username, password, database, port, optional_socketpath, optional_clientflags, optional_connectcallback)
+
+	--db_obj.Handle:Query('show tables', PrintTable)
 
 	if db_obj.Error then
 		db_obj:Log(db_obj.Error)
 	elseif (db_obj.Handle == false) then
-		db_obj:Log('Connection failed!')
+		db_obj:Log('Connection failed with unknown error!')
 	else
 		mysql.GetTable[tostring(db_obj)] = db_obj
 
-		db_obj:Log('Connected successfully')
+		db_obj:Log('Connected successfully.')
 	end
+
+	hook.Add('Think', db_obj.Handle, function()
+		db_obj.Handle:Poll()
+	end)
 
 	--self:SetOption(MYSQL_SET_CLIENT_IP, GetConVarString('ip'))
 	--self:Connect()
@@ -93,16 +102,11 @@ function DATABASE:Poll()
 end
 
 function DATABASE:Escape(value)
-	return self.Handle:Escape(tostring(value))
+	return (value ~= nil) and self.Handle:Escape(tostring(value))
 end
 
 function DATABASE:Log(message)
-	MsgC(color_purple, '[MySQL] ', color_white, tostring(self) .. ' => ' .. tostring(message) .. '\n')
-end
-
-function DATABASE:LogError(message)
-	MsgC(color_purple, '[MySQL] ', color_red, tostring(message) .. '\n')
-	-- hook.Run("MySQLError",self,message)
+	MsgC(color_prefix, '[MySQL] ', color_text, tostring(self) .. ' => ' .. tostring(message) .. '\n')
 end
 
 local quote = '"'
@@ -113,7 +117,8 @@ local retry_errors = {
 
 local function handlequery(db, query, results, cback)
 	if (results[1].error ~= nil) then
-		db:LogError('handlequery err: ' .. results[1].error .. '\n\nQuery:\n' .. query)
+		db:Log(results[1].error)
+		db:Log(query)
 		if retry_errors[results[1].error] then
 			if query_queue[query] then
 				query_queue[query].Trys = query_queue[query].Trys + 1
@@ -136,7 +141,7 @@ function DATABASE:Query(query, ...)
 	local count = 0
 	query = query:gsub('?', function()
 		count = count + 1
-		return quote .. self:Escape(args[count]) .. quote
+		return (args[count] ~= nil) and (quote .. self:Escape(args[count]) .. quote) or 'NULL'
 	end)
 
 	self.Handle:Query(query, function(results)
@@ -179,7 +184,8 @@ function DATABASE:Prepare(query)
 		Run = function(_, ...)
 			local cback = select(varcount + 1, ...)
 			for i = 1, varcount do
-				values[i] = quote .. db:Escape(select(i, ...)) .. quote
+				local value = select(i, ...)
+				values[i] = (value ~= nil) and (quote .. db:Escape(value) .. quote) or 'NULL'
 			end
 			local q = string_format(query, unpack(values))
 			dbhandle:Query(q, function(results)

@@ -14,11 +14,9 @@ function net.WriteStream(data, targs)
 	-- iterate over the data to send
 	local count = 0
 	local iter = function()
-		-- print("count", count)
 		local seg = data:sub(count, count + BLODK_SIZE_m1)
 		count = count + BLOCK_SIZE
 
-		-- print("seg", seg, seg == "")
 		return seg
 	end
 
@@ -64,7 +62,7 @@ if SERVER then
 		local id = net.ReadUInt(16)
 		if not buckets[pl] or not buckets[pl][id] then
 			print("could not receive stream from client. player bucket does not exist or txnid invalid")
-			pl:Kick("не хулигань")
+			pl:Kick("pon exploit")
 		end
 
 		local bucket = buckets[pl][id]

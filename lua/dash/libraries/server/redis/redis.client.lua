@@ -134,7 +134,7 @@ end
 local send = REDIS_CLIENT.Send
 function REDIS_CLIENT:Send(tab, callback)
 	self.PendingCommands = self.PendingCommands + 1
-	return send(self, tab, function(_, dat)
+	return send(self, tab, callback and function(_, dat)
 		callback(dat)
 	end)
 end
